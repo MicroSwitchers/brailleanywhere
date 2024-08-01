@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>6-Key Braille Touch Screen App</title>
+    <title>Ergonomic 6-Key Braille Touch Screen App</title>
     <style>
         body, html {
             margin: 0;
@@ -49,6 +49,20 @@
             text-align: center;
             max-width: 80%;
         }
+        #calibrationFeedback {
+            width: 100%;
+            height: 200px;
+            position: relative;
+            margin-top: 20px;
+        }
+        .calibrationDot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #ff6b6b;
+            position: absolute;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body>
@@ -62,12 +76,14 @@
             <div class="dot" id="dot6"></div>
         </div>
         <div id="message">Hold down 6 fingers to calibrate</div>
+        <div id="calibrationFeedback"></div>
     </div>
 
     <script>
         const app = document.getElementById('app');
         const message = document.getElementById('message');
         const dots = document.querySelectorAll('.dot');
+        const calibrationFeedback = document.getElementById('calibrationFeedback');
 
         let calibrationPoints = [];
         let isCalibrated = false;
@@ -96,22 +112,30 @@
                 y: touch.clientY
             }));
 
-            // Find center point
-            const centerX = touchPoints.reduce((sum, p) => sum + p.x, 0) / 6;
-            const centerY = touchPoints.reduce((sum, p) => sum + p.y, 0) / 6;
+            // Sort points from left to right
+            touchPoints.sort((a, b) => a.x - b.x);
 
-            // Separate left and right points
-            const leftPoints = touchPoints.filter(p => p.x < centerX).sort((a, b) => a.y - b.y);
-            const rightPoints = touchPoints.filter(p => p.x >= centerX).sort((a, b) => a.y - b.y);
-
+            // Assign points to fingers (left to right)
             calibrationPoints = [
-                leftPoints[0], rightPoints[0],  // Top dots (1, 4)
-                leftPoints[1], rightPoints[1],  // Middle dots (2, 5)
-                leftPoints[2], rightPoints[2]   // Bottom dots (3, 6)
+                touchPoints[2], touchPoints[3], // Top row (innermost)
+                touchPoints[1], touchPoints[4], // Middle row
+                touchPoints[0], touchPoints[5]  // Bottom row (outermost)
             ];
 
             isCalibrated = true;
             message.textContent = 'Calibrated! Tap to create braille dots';
+            showCalibrationFeedback(touchPoints);
+        }
+
+        function showCalibrationFeedback(points) {
+            calibrationFeedback.innerHTML = '';
+            points.forEach((point, index) => {
+                const dot = document.createElement('div');
+                dot.className = 'calibrationDot';
+                dot.style.left = `${(point.x / window.innerWidth) * 100}%`;
+                dot.style.top = `${(point.y / window.innerHeight) * 100}%`;
+                calibrationFeedback.appendChild(dot);
+            });
         }
 
         function processInput(touches) {
