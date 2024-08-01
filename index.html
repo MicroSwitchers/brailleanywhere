@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Braille Touch Screen App</title>
+    <title>6-Key Braille Touch Screen App</title>
     <style>
         #app {
             width: 100vw;
@@ -68,18 +68,9 @@
             const touches = e.touches;
 
             if (!isCalibrated && touches.length === 6) {
-                calibrationPoints = Array.from(touches).map(touch => ({
-                    x: touch.clientX,
-                    y: touch.clientY
-                }));
-                isCalibrated = true;
-                message.textContent = 'Calibrated! Tap to create braille dots';
+                calibrate(touches);
             } else if (isCalibrated) {
-                const touch = touches[0];
-                const dotIndex = findClosestDot(touch.clientX, touch.clientY);
-                if (dotIndex !== -1) {
-                    dots[dotIndex].classList.toggle('active');
-                }
+                processInput(touches);
             }
         }
 
@@ -87,21 +78,45 @@
             e.preventDefault();
         }
 
-        function findClosestDot(x, y) {
-            let closestIndex = -1;
-            let minDistance = Infinity;
+        function calibrate(touches) {
+            const touchPoints = Array.from(touches).map(touch => ({
+                x: touch.clientX,
+                y: touch.clientY
+            }));
 
-            calibrationPoints.forEach((point, index) => {
-                const distance = Math.sqrt(
-                    Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2)
-                );
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestIndex = index;
-                }
+            // Find center point
+            const centerX = touchPoints.reduce((sum, p) => sum + p.x, 0) / 6;
+            const centerY = touchPoints.reduce((sum, p) => sum + p.y, 0) / 6;
+
+            // Separate left and right points
+            const leftPoints = touchPoints.filter(p => p.x < centerX).sort((a, b) => a.y - b.y);
+            const rightPoints = touchPoints.filter(p => p.x >= centerX).sort((a, b) => a.y - b.y);
+
+            calibrationPoints = [
+                leftPoints[0], rightPoints[0],  // Top dots (1, 4)
+                leftPoints[1], rightPoints[1],  // Middle dots (2, 5)
+                leftPoints[2], rightPoints[2]   // Bottom dots (3, 6)
+            ];
+
+            isCalibrated = true;
+            message.textContent = 'Calibrated! Tap to create braille dots';
+        }
+
+        function processInput(touches) {
+            const activeIndexes = Array.from(touches).map(touch => 
+                findClosestDot(touch.clientX, touch.clientY)
+            );
+
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', activeIndexes.includes(index));
             });
+        }
 
-            return closestIndex;
+        function findClosestDot(x, y) {
+            return calibrationPoints.reduce((closest, point, index) => {
+                const distance = Math.hypot(x - point.x, y - point.y);
+                return distance < closest.distance ? {index, distance} : closest;
+            }, {index: -1, distance: Infinity}).index;
         }
     </script>
 </body>
