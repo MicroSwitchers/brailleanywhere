@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Braille Touch Screen App</title>
+    <style>
+        #app {
+            width: 100vw;
+            height: 100vh;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #brailleDisplay {
+            width: 100px;
+            height: 150px;
+            background-color: #fff;
+            border: 2px solid #000;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-gap: 10px;
+            padding: 10px;
+        }
+        .dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ccc;
+        }
+        .active {
+            background-color: #000;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="brailleDisplay">
+            <div class="dot" id="dot1"></div>
+            <div class="dot" id="dot4"></div>
+            <div class="dot" id="dot2"></div>
+            <div class="dot" id="dot5"></div>
+            <div class="dot" id="dot3"></div>
+            <div class="dot" id="dot6"></div>
+        </div>
+        <div id="message">Hold down 6 fingers to calibrate</div>
+    </div>
+
+    <script>
+        const app = document.getElementById('app');
+        const message = document.getElementById('message');
+        const dots = document.querySelectorAll('.dot');
+
+        let calibrationPoints = [];
+        let isCalibrated = false;
+
+        app.addEventListener('touchstart', handleTouchStart);
+        app.addEventListener('touchend', handleTouchEnd);
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touches = e.touches;
+
+            if (!isCalibrated && touches.length === 6) {
+                calibrationPoints = Array.from(touches).map(touch => ({
+                    x: touch.clientX,
+                    y: touch.clientY
+                }));
+                isCalibrated = true;
+                message.textContent = 'Calibrated! Tap to create braille dots';
+            } else if (isCalibrated) {
+                const touch = touches[0];
+                const dotIndex = findClosestDot(touch.clientX, touch.clientY);
+                if (dotIndex !== -1) {
+                    dots[dotIndex].classList.toggle('active');
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            e.preventDefault();
+        }
+
+        function findClosestDot(x, y) {
+            let closestIndex = -1;
+            let minDistance = Infinity;
+
+            calibrationPoints.forEach((point, index) => {
+                const distance = Math.sqrt(
+                    Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2)
+                );
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestIndex = index;
+                }
+            });
+
+            return closestIndex;
+        }
+    </script>
+</body>
+</html>
