@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corrected Ergonomic 6-Key Braille Touch Screen App</title>
+    <title>6-Key Braille Touch Screen App with Recalibration</title>
     <style>
         body, html {
             margin: 0;
@@ -86,6 +86,8 @@
 
         let calibrationPoints = [];
         let isCalibrated = false;
+        let calibrationTimer = null;
+        let isCalibratingMode = false;
 
         app.addEventListener('touchstart', handleTouchStart);
         app.addEventListener('touchend', handleTouchEnd);
@@ -94,8 +96,17 @@
             e.preventDefault();
             const touches = e.touches;
 
-            if (!isCalibrated && touches.length === 6) {
-                calibrate(touches);
+            if (touches.length === 6) {
+                if (!isCalibrated || isCalibratingMode) {
+                    calibrate(touches);
+                } else {
+                    // Start timer for recalibration
+                    calibrationTimer = setTimeout(() => {
+                        isCalibratingMode = true;
+                        message.textContent = 'Recalibrating...';
+                        calibrate(touches);
+                    }, 3000);
+                }
             } else if (isCalibrated) {
                 processInput(touches);
             }
@@ -103,6 +114,11 @@
 
         function handleTouchEnd(e) {
             e.preventDefault();
+            if (calibrationTimer) {
+                clearTimeout(calibrationTimer);
+                calibrationTimer = null;
+            }
+            isCalibratingMode = false;
         }
 
         function calibrate(touches) {
