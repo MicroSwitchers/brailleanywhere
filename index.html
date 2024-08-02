@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Correctly Configured 6-Key Braille Touch Screen App</title>
+    <title>Intuitive 6-Key Braille Touch Screen App</title>
     <style>
         body, html {
             margin: 0;
@@ -36,7 +36,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            transition: opacity 0.2s ease;
+            transition: all 0.2s ease;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -47,10 +47,15 @@
         #dot2, #dot5 { background-color: #9b59b6; } /* Purple */
         #dot3, #dot6 { background-color: #3498db; } /* Blue */
         .active {
-            opacity: 1;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
         .inactive {
             opacity: 0.3;
+        }
+        .hover {
+            opacity: 0.7;
+            transform: scale(1.05);
         }
         #message {
             margin-top: 30px;
@@ -121,7 +126,7 @@
 
         app.addEventListener('touchstart', handleTouchStart);
         app.addEventListener('touchend', handleTouchEnd);
-        app.addEventListener('touchmove', (e) => e.preventDefault());
+        app.addEventListener('touchmove', handleTouchMove);
 
         function handleTouchStart(e) {
             e.preventDefault();
@@ -131,27 +136,46 @@
                 if (!isCalibrated || isCalibratingMode) {
                     calibrate(touches);
                 } else {
-                    // Start timer for recalibration
-                    message.textContent = 'Hold for 3 seconds to recalibrate...';
-                    let progress = 0;
-                    recalibrationInterval = setInterval(() => {
-                        progress += 3.33;  // Increase by 3.33% every 100ms
-                        recalibrationProgress.style.width = `${progress}%`;
-                    }, 100);
-                    
-                    calibrationTimer = setTimeout(() => {
-                        isCalibratingMode = true;
-                        message.textContent = 'Recalibrating...';
-                        calibrate(touches);
-                    }, 3000);
+                    startRecalibrationTimer();
                 }
             } else if (isCalibrated) {
                 processInput(touches);
             }
         }
 
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (isCalibrated) {
+                processInput(e.touches);
+            }
+        }
+
         function handleTouchEnd(e) {
             e.preventDefault();
+            clearRecalibrationTimer();
+            if (!isCalibratingMode && isCalibrated) {
+                message.textContent = 'Tap to create braille dots';
+            }
+            isCalibratingMode = false;
+            dots.forEach(dot => dot.classList.remove('hover'));
+        }
+
+        function startRecalibrationTimer() {
+            message.textContent = 'Hold for 3 seconds to recalibrate...';
+            let progress = 0;
+            recalibrationInterval = setInterval(() => {
+                progress += 3.33;
+                recalibrationProgress.style.width = `${progress}%`;
+            }, 100);
+            
+            calibrationTimer = setTimeout(() => {
+                isCalibratingMode = true;
+                message.textContent = 'Recalibrating...';
+                calibrate(event.touches);
+            }, 3000);
+        }
+
+        function clearRecalibrationTimer() {
             if (calibrationTimer) {
                 clearTimeout(calibrationTimer);
                 calibrationTimer = null;
@@ -161,13 +185,6 @@
                 recalibrationInterval = null;
             }
             recalibrationProgress.style.width = '0%';
-            if (!isCalibratingMode && isCalibrated) {
-                message.textContent = 'Tap to create braille dots';
-            }
-            isCalibratingMode = false;
-            if (isCalibrated) {
-                dots.forEach(dot => dot.classList.add('inactive'));
-            }
         }
 
         function calibrate(touches) {
@@ -176,14 +193,12 @@
                 y: touch.clientY
             }));
 
-            // Sort points from left to right
             touchPoints.sort((a, b) => a.x - b.x);
 
-            // Assign points to fingers based on their position
             calibrationPoints = [
-                touchPoints[2], touchPoints[3], // Green (innermost)
-                touchPoints[1], touchPoints[4], // Purple (middle)
-                touchPoints[0], touchPoints[5]  // Blue (outermost)
+                touchPoints[2], touchPoints[3], // Green (innermost) - 1
+                touchPoints[1], touchPoints[4], // Purple (middle) - 2
+                touchPoints[0], touchPoints[5]  // Blue (outermost) - 3
             ];
 
             isCalibrated = true;
@@ -207,13 +222,23 @@
         }
 
         function processInput(touches) {
-            const activeIndexes = Array.from(touches).map(touch => 
-                findClosestDot(touch.clientX, touch.clientY)
-            );
+            const activeIndexes = new Set();
+            Array.from(touches).forEach(touch => {
+                const closestDot = findClosestDot(touch.clientX, touch.clientY);
+                if (closestDot !== -1) {
+                    activeIndexes.add(closestDot);
+                }
+            });
 
             dots.forEach((dot, index) => {
-                dot.classList.toggle('active', activeIndexes.includes(index));
-                dot.classList.toggle('inactive', !activeIndexes.includes(index));
+                dot.classList.toggle('active', activeIndexes.has(index));
+                dot.classList.toggle('inactive', !activeIndexes.has(index));
+            });
+
+            // Show hover effect for the closest dot that isn't being touched
+            const hoverDot = findClosestDot(touches[0].clientX, touches[0].clientY);
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('hover', index === hoverDot && !activeIndexes.has(index));
             });
         }
 
