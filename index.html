@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Color-Coded 6-Key Braille Touch Screen App</title>
+    <title>Correctly Mapped Color-Coded 6-Key Braille Touch Screen App</title>
     <style>
         body, html {
             margin: 0;
@@ -36,7 +36,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            transition: background-color 0.2s ease;
+            transition: opacity 0.2s ease;
         }
         #dot1, #dot4 { background-color: #2ecc71; } /* Green */
         #dot2, #dot5 { background-color: #9b59b6; } /* Purple */
@@ -170,9 +170,9 @@
 
             // Assign points to fingers based on their position
             calibrationPoints = [
-                touchPoints[0], touchPoints[5], // Blue (outermost)
-                touchPoints[1], touchPoints[4], // Purple
-                touchPoints[2], touchPoints[3]  // Green (innermost)
+                touchPoints[2], touchPoints[3], // Green (innermost)
+                touchPoints[1], touchPoints[4], // Purple (middle)
+                touchPoints[0], touchPoints[5]  // Blue (outermost)
             ];
 
             isCalibrated = true;
@@ -182,7 +182,7 @@
 
         function showCalibrationFeedback(points) {
             calibrationFeedback.innerHTML = '<div id="recalibrationProgress"></div>';
-            const colors = ['#3498db', '#3498db', '#9b59b6', '#9b59b6', '#2ecc71', '#2ecc71'];
+            const colors = ['#2ecc71', '#2ecc71', '#9b59b6', '#9b59b6', '#3498db', '#3498db'];
             points.forEach((point, index) => {
                 const dot = document.createElement('div');
                 dot.className = 'calibrationDot';
