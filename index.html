@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intuitive 6-Key Braille Touch Screen App</title>
+    <title>Revised 6-Key Braille Touch Screen App</title>
     <style>
         body, html {
             margin: 0;
@@ -99,11 +99,11 @@
     <div id="app">
         <div id="brailleDisplay">
             <div class="dot inactive" id="dot1">1</div>
-            <div class="dot inactive" id="dot4">1</div>
+            <div class="dot inactive" id="dot4">4</div>
             <div class="dot inactive" id="dot2">2</div>
-            <div class="dot inactive" id="dot5">2</div>
+            <div class="dot inactive" id="dot5">5</div>
             <div class="dot inactive" id="dot3">3</div>
-            <div class="dot inactive" id="dot6">3</div>
+            <div class="dot inactive" id="dot6">6</div>
         </div>
         <div id="message">Hold down 6 fingers to calibrate</div>
         <div id="calibrationFeedback">
@@ -196,9 +196,9 @@
             touchPoints.sort((a, b) => a.x - b.x);
 
             calibrationPoints = [
-                touchPoints[2], touchPoints[3], // Green (innermost) - 1
-                touchPoints[1], touchPoints[4], // Purple (middle) - 2
-                touchPoints[0], touchPoints[5]  // Blue (outermost) - 3
+                touchPoints[2], touchPoints[3], // Green (1 and 4)
+                touchPoints[1], touchPoints[4], // Purple (2 and 5)
+                touchPoints[0], touchPoints[5]  // Blue (3 and 6)
             ];
 
             isCalibrated = true;
@@ -208,8 +208,8 @@
 
         function showCalibrationFeedback(points) {
             calibrationFeedback.innerHTML = '<div id="recalibrationProgress"></div>';
-            const colors = ['#2ecc71', '#2ecc71', '#9b59b6', '#9b59b6', '#3498db', '#3498db'];
-            const labels = ['1', '1', '2', '2', '3', '3'];
+            const colors = ['#3498db', '#9b59b6', '#2ecc71', '#2ecc71', '#9b59b6', '#3498db'];
+            const labels = ['3', '2', '1', '4', '5', '6'];
             points.forEach((point, index) => {
                 const dot = document.createElement('div');
                 dot.className = 'calibrationDot';
@@ -236,10 +236,12 @@
             });
 
             // Show hover effect for the closest dot that isn't being touched
-            const hoverDot = findClosestDot(touches[0].clientX, touches[0].clientY);
-            dots.forEach((dot, index) => {
-                dot.classList.toggle('hover', index === hoverDot && !activeIndexes.has(index));
-            });
+            if (touches.length > 0) {
+                const hoverDot = findClosestDot(touches[0].clientX, touches[0].clientY);
+                dots.forEach((dot, index) => {
+                    dot.classList.toggle('hover', index === hoverDot && !activeIndexes.has(index));
+                });
+            }
         }
 
         function findClosestDot(x, y) {
