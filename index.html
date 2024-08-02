@@ -165,14 +165,14 @@
                 y: touch.clientY
             }));
 
-            // Sort points from left to right
-            touchPoints.sort((a, b) => a.x - b.x);
+            // Sort points from top to bottom, then left to right within each row
+            touchPoints.sort((a, b) => a.y - b.y || a.x - b.x);
 
             // Assign points to fingers based on their position
             calibrationPoints = [
-                touchPoints[2], touchPoints[3], // Green (innermost)
-                touchPoints[1], touchPoints[4], // Purple (middle)
-                touchPoints[0], touchPoints[5]  // Blue (outermost)
+                touchPoints[0], touchPoints[3], // Dot 1, Dot 4
+                touchPoints[1], touchPoints[4], // Dot 2, Dot 5
+                touchPoints[2], touchPoints[5]  // Dot 3, Dot 6
             ];
 
             isCalibrated = true;
@@ -182,7 +182,7 @@
 
         function showCalibrationFeedback(points) {
             calibrationFeedback.innerHTML = '<div id="recalibrationProgress"></div>';
-            const colors = ['#2ecc71', '#2ecc71', '#9b59b6', '#9b59b6', '#3498db', '#3498db'];
+            const colors = ['#2ecc71', '#2ecc71', '#9b59b6', '#9b59b6', '#e74c3c', '#e74c3c'];
             points.forEach((point, index) => {
                 const dot = document.createElement('div');
                 dot.className = 'calibrationDot';
