@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>6-Key Braille Touch Screen App with Recalibration</title>
+    <title>6-Key Braille Touch Screen App with Improved Recalibration</title>
     <style>
         body, html {
             margin: 0;
@@ -61,6 +61,16 @@
             border-radius: 50%;
             position: absolute;
             transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+        #recalibrationProgress {
+            width: 0%;
+            height: 5px;
+            background-color: #4a90e2;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            transition: width 0.1s linear;
         }
     </style>
 </head>
@@ -75,7 +85,9 @@
             <div class="dot" id="dot6"></div>
         </div>
         <div id="message">Hold down 6 fingers to calibrate</div>
-        <div id="calibrationFeedback"></div>
+        <div id="calibrationFeedback">
+            <div id="recalibrationProgress"></div>
+        </div>
     </div>
 
     <script>
@@ -83,14 +95,17 @@
         const message = document.getElementById('message');
         const dots = document.querySelectorAll('.dot');
         const calibrationFeedback = document.getElementById('calibrationFeedback');
+        const recalibrationProgress = document.getElementById('recalibrationProgress');
 
         let calibrationPoints = [];
         let isCalibrated = false;
         let calibrationTimer = null;
         let isCalibratingMode = false;
+        let recalibrationInterval = null;
 
         app.addEventListener('touchstart', handleTouchStart);
         app.addEventListener('touchend', handleTouchEnd);
+        app.addEventListener('touchmove', (e) => e.preventDefault());
 
         function handleTouchStart(e) {
             e.preventDefault();
@@ -101,6 +116,13 @@
                     calibrate(touches);
                 } else {
                     // Start timer for recalibration
+                    message.textContent = 'Hold for 3 seconds to recalibrate...';
+                    let progress = 0;
+                    recalibrationInterval = setInterval(() => {
+                        progress += 3.33;  // Increase by 3.33% every 100ms
+                        recalibrationProgress.style.width = `${progress}%`;
+                    }, 100);
+                    
                     calibrationTimer = setTimeout(() => {
                         isCalibratingMode = true;
                         message.textContent = 'Recalibrating...';
@@ -117,6 +139,14 @@
             if (calibrationTimer) {
                 clearTimeout(calibrationTimer);
                 calibrationTimer = null;
+            }
+            if (recalibrationInterval) {
+                clearInterval(recalibrationInterval);
+                recalibrationInterval = null;
+            }
+            recalibrationProgress.style.width = '0%';
+            if (!isCalibratingMode && isCalibrated) {
+                message.textContent = 'Tap to create braille dots';
             }
             isCalibratingMode = false;
         }
@@ -143,7 +173,7 @@
         }
 
         function showCalibrationFeedback(points) {
-            calibrationFeedback.innerHTML = '';
+            calibrationFeedback.innerHTML = '<div id="recalibrationProgress"></div>';  // Clear previous dots but keep the progress bar
             const colors = ['#3498db', '#9b59b6', '#2ecc71', '#2ecc71', '#9b59b6', '#3498db'];
             points.forEach((point, index) => {
                 const dot = document.createElement('div');
