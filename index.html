@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Continuous Row Braille Input App</title>
+    <title>Multi-Cell Braille Touch Screen App</title>
     <style>
         body, html {
             margin: 0;
@@ -17,39 +17,35 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
-        }
-        #brailleCellsContainer {
-            width: 100%;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding: 20px 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         #brailleCells {
-            display: inline-flex;
-            transition: transform 0.3s ease;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 800px;
+            gap: 10px;
+            margin-bottom: 20px;
         }
         .brailleCell {
-            width: 80px;
-            height: 120px;
+            width: 60px;
+            height: 90px;
             background-color: #fff;
             border: 2px solid #4a90e2;
-            border-radius: 10px;
+            border-radius: 8px;
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            grid-gap: 10px;
-            padding: 10px;
-            margin-right: 10px;
-            transition: all 0.3s ease;
-        }
-        .currentCell {
-            border-color: #2ecc71;
-            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+            grid-gap: 5px;
+            padding: 5px;
         }
         .dot {
-            width: 25px;
-            height: 25px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             transition: all 0.2s ease;
             display: flex;
@@ -57,7 +53,7 @@
             align-items: center;
             font-weight: bold;
             color: white;
-            font-size: 12px;
+            font-size: 10px;
         }
         .dot1, .dot4 { background-color: #2ecc71; } /* Green */
         .dot2, .dot5 { background-color: #9b59b6; } /* Purple */
@@ -70,11 +66,11 @@
             opacity: 0.3;
         }
         #message {
-            margin-top: 20px;
-            font-size: 18px;
+            font-size: 20px;
             color: #333;
             text-align: center;
             max-width: 80%;
+            margin-bottom: 20px;
         }
         #calibrationFeedback {
             width: 100%;
@@ -83,8 +79,8 @@
             margin-top: 20px;
         }
         .calibrationDot {
-            width: 15px;
-            height: 15px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             position: absolute;
             transform: translate(-50%, -50%);
@@ -94,7 +90,7 @@
             align-items: center;
             font-weight: bold;
             color: white;
-            font-size: 10px;
+            font-size: 12px;
         }
         #recalibrationProgress {
             width: 0%;
@@ -105,21 +101,12 @@
             left: 0;
             transition: width 0.1s linear;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .fadeIn {
-            animation: fadeIn 0.5s ease-in;
-        }
     </style>
 </head>
 <body>
     <div id="app">
-        <div id="brailleCellsContainer">
-            <div id="brailleCells"></div>
-        </div>
         <div id="message">Hold down 6 fingers to calibrate</div>
+        <div id="brailleCells"></div>
         <div id="calibrationFeedback">
             <div id="recalibrationProgress"></div>
         </div>
@@ -127,9 +114,8 @@
 
     <script>
         const app = document.getElementById('app');
-        const brailleCells = document.getElementById('brailleCells');
-        const brailleCellsContainer = document.getElementById('brailleCellsContainer');
         const message = document.getElementById('message');
+        const brailleCells = document.getElementById('brailleCells');
         const calibrationFeedback = document.getElementById('calibrationFeedback');
         const recalibrationProgress = document.getElementById('recalibrationProgress');
 
@@ -141,34 +127,10 @@
         let isPostCalibrationBlocked = false;
         let longPressTimer = null;
         let currentCell = null;
-        let cells = [];
-
-        // Create initial cell
-        createBrailleCell();
 
         app.addEventListener('touchstart', handleTouchStart);
         app.addEventListener('touchend', handleTouchEnd);
         app.addEventListener('touchmove', handleTouchMove);
-
-        function createBrailleCell() {
-            const cell = document.createElement('div');
-            cell.className = 'brailleCell fadeIn';
-            for (let i = 1; i <= 6; i++) {
-                const dot = document.createElement('div');
-                dot.className = `dot dot${i} inactive`;
-                dot.textContent = i;
-                cell.appendChild(dot);
-            }
-            brailleCells.appendChild(cell);
-            cells.push(cell);
-            currentCell = cell;
-            scrollToEnd();
-            return cell;
-        }
-
-        function scrollToEnd() {
-            brailleCellsContainer.scrollLeft = brailleCellsContainer.scrollWidth;
-        }
 
         function handleTouchStart(e) {
             e.preventDefault();
@@ -181,9 +143,6 @@
                     startRecalibrationTimer();
                 }
             } else if (isCalibrated && !isPostCalibrationBlocked) {
-                if (!currentCell || !currentCell.classList.contains('currentCell')) {
-                    createBrailleCell();
-                }
                 processInput(touches);
                 startLongPressTimer();
             }
@@ -203,20 +162,13 @@
             
             if (isPostCalibrationBlocked && e.touches.length === 0) {
                 isPostCalibrationBlocked = false;
-                message.textContent = 'You can now create Braille dots';
+                message.textContent = 'You can now create Braille cells';
+                createNewCell();
             } else if (!isCalibratingMode && isCalibrated) {
                 message.textContent = 'Tap to create Braille dots';
-                if (e.touches.length === 0 && currentCell) {
-                    confirmCell();
-                }
             }
             
             isCalibratingMode = false;
-        }
-
-        function confirmCell() {
-            currentCell.classList.remove('currentCell');
-            currentCell = null;
         }
 
         function startRecalibrationTimer() {
@@ -249,8 +201,8 @@
         function startLongPressTimer() {
             clearLongPressTimer();
             longPressTimer = setTimeout(() => {
-                resetBrailleDots();
-                message.textContent = 'Dots reset due to long press';
+                resetLastCell();
+                message.textContent = 'Last cell reset due to long press';
             }, 3000);
         }
 
@@ -261,7 +213,7 @@
             }
         }
 
-        function resetBrailleDots() {
+        function resetLastCell() {
             if (currentCell) {
                 const dots = currentCell.querySelectorAll('.dot');
                 dots.forEach(dot => {
@@ -306,10 +258,24 @@
             });
         }
 
-        function processInput(touches) {
-            if (!currentCell) return;
+        function createNewCell() {
+            const cell = document.createElement('div');
+            cell.className = 'brailleCell';
+            for (let i = 1; i <= 6; i++) {
+                const dot = document.createElement('div');
+                dot.className = `dot dot${i} inactive`;
+                dot.textContent = i;
+                cell.appendChild(dot);
+            }
+            brailleCells.appendChild(cell);
+            currentCell = cell;
+        }
 
-            const dots = currentCell.querySelectorAll('.dot');
+        function processInput(touches) {
+            if (!currentCell) {
+                createNewCell();
+            }
+
             const activeIndexes = new Set();
             Array.from(touches).forEach(touch => {
                 const closestDot = findClosestDot(touch.clientX, touch.clientY);
@@ -318,12 +284,15 @@
                 }
             });
 
+            const dots = currentCell.querySelectorAll('.dot');
             dots.forEach((dot, index) => {
                 dot.classList.toggle('active', activeIndexes.has(index));
                 dot.classList.toggle('inactive', !activeIndexes.has(index));
             });
 
-            currentCell.classList.add('currentCell');
+            if (Array.from(dots).every(dot => dot.classList.contains('active') || !dot.classList.contains('inactive'))) {
+                createNewCell();
+            }
         }
 
         function findClosestDot(x, y) {
