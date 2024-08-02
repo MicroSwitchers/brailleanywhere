@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Correctly Oriented 6-Key Braille Touch Screen App</title>
+    <title>Color-Coded 6-Key Braille Touch Screen App</title>
     <style>
         body, html {
             margin: 0;
@@ -36,11 +36,16 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-color: #e0e0e0;
             transition: background-color 0.2s ease;
         }
+        #dot1, #dot4 { background-color: #2ecc71; } /* Green */
+        #dot2, #dot5 { background-color: #9b59b6; } /* Purple */
+        #dot3, #dot6 { background-color: #e74c3c; } /* Red */
         .active {
-            background-color: #4a90e2;
+            opacity: 1;
+        }
+        .inactive {
+            opacity: 0.3;
         }
         #message {
             margin-top: 30px;
@@ -77,12 +82,12 @@
 <body>
     <div id="app">
         <div id="brailleDisplay">
-            <div class="dot" id="dot1"></div>
-            <div class="dot" id="dot4"></div>
-            <div class="dot" id="dot2"></div>
-            <div class="dot" id="dot5"></div>
-            <div class="dot" id="dot3"></div>
-            <div class="dot" id="dot6"></div>
+            <div class="dot inactive" id="dot1"></div>
+            <div class="dot inactive" id="dot4"></div>
+            <div class="dot inactive" id="dot2"></div>
+            <div class="dot inactive" id="dot5"></div>
+            <div class="dot inactive" id="dot3"></div>
+            <div class="dot inactive" id="dot6"></div>
         </div>
         <div id="message">Hold down 6 fingers to calibrate</div>
         <div id="calibrationFeedback">
@@ -149,6 +154,9 @@
                 message.textContent = 'Tap to create braille dots';
             }
             isCalibratingMode = false;
+            if (isCalibrated) {
+                dots.forEach(dot => dot.classList.add('inactive'));
+            }
         }
 
         function calibrate(touches) {
@@ -160,18 +168,11 @@
             // Sort points from left to right
             touchPoints.sort((a, b) => a.x - b.x);
 
-            // Split into left and right groups
-            const leftPoints = touchPoints.slice(0, 3);
-            const rightPoints = touchPoints.slice(3);
-
-            // Sort each group from top to bottom
-            leftPoints.sort((a, b) => a.y - b.y);
-            rightPoints.sort((a, b) => a.y - b.y);
-
-            // Assign points to fingers (left column then right column, top to bottom)
+            // Assign points to fingers based on their position
             calibrationPoints = [
-                ...leftPoints,
-                ...rightPoints
+                touchPoints[0], touchPoints[5], // Blue (outermost)
+                touchPoints[1], touchPoints[4], // Purple
+                touchPoints[2], touchPoints[3]  // Green (innermost)
             ];
 
             isCalibrated = true;
@@ -181,7 +182,7 @@
 
         function showCalibrationFeedback(points) {
             calibrationFeedback.innerHTML = '<div id="recalibrationProgress"></div>';
-            const colors = ['#3498db', '#9b59b6', '#2ecc71', '#3498db', '#9b59b6', '#2ecc71'];
+            const colors = ['#3498db', '#3498db', '#9b59b6', '#9b59b6', '#2ecc71', '#2ecc71'];
             points.forEach((point, index) => {
                 const dot = document.createElement('div');
                 dot.className = 'calibrationDot';
@@ -199,6 +200,7 @@
 
             dots.forEach((dot, index) => {
                 dot.classList.toggle('active', activeIndexes.includes(index));
+                dot.classList.toggle('inactive', !activeIndexes.includes(index));
             });
         }
 
