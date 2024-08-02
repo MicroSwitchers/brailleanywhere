@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Revised 6-Key Braille Touch Screen App</title>
+    <title>6-Key Braille Touch Screen App with Post-Calibration Block</title>
     <style>
         body, html {
             margin: 0;
@@ -123,6 +123,7 @@
         let calibrationTimer = null;
         let isCalibratingMode = false;
         let recalibrationInterval = null;
+        let isPostCalibrationBlocked = false;
 
         app.addEventListener('touchstart', handleTouchStart);
         app.addEventListener('touchend', handleTouchEnd);
@@ -132,20 +133,20 @@
             e.preventDefault();
             const touches = e.touches;
 
-            if (touches.length === 6) {
+            if (touches.length === 6 && !isPostCalibrationBlocked) {
                 if (!isCalibrated || isCalibratingMode) {
                     calibrate(touches);
                 } else {
                     startRecalibrationTimer();
                 }
-            } else if (isCalibrated) {
+            } else if (isCalibrated && !isPostCalibrationBlocked) {
                 processInput(touches);
             }
         }
 
         function handleTouchMove(e) {
             e.preventDefault();
-            if (isCalibrated) {
+            if (isCalibrated && !isPostCalibrationBlocked) {
                 processInput(e.touches);
             }
         }
@@ -153,11 +154,16 @@
         function handleTouchEnd(e) {
             e.preventDefault();
             clearRecalibrationTimer();
-            if (!isCalibratingMode && isCalibrated) {
-                message.textContent = 'Tap to create braille dots';
+            
+            if (isPostCalibrationBlocked && e.touches.length === 0) {
+                isPostCalibrationBlocked = false;
+                message.textContent = 'Calibration complete. You can now create Braille dots.';
+            } else if (!isCalibratingMode && isCalibrated) {
+                message.textContent = 'Tap to create Braille dots';
             }
+            
             isCalibratingMode = false;
-            dots.forEach(dot => dot.classList.remove('hover'));
+            dots.forEach(dot => dot.classList.remove('hover', 'active'));
         }
 
         function startRecalibrationTimer() {
@@ -202,7 +208,8 @@
             ];
 
             isCalibrated = true;
-            message.textContent = 'Calibrated! Tap to create braille dots';
+            isPostCalibrationBlocked = true;
+            message.textContent = 'Calibrated! Release all fingers to continue.';
             showCalibrationFeedback(calibrationPoints);
         }
 
@@ -235,7 +242,6 @@
                 dot.classList.toggle('inactive', !activeIndexes.has(index));
             });
 
-            // Show hover effect for the closest dot that isn't being touched
             if (touches.length > 0) {
                 const hoverDot = findClosestDot(touches[0].clientX, touches[0].clientY);
                 dots.forEach((dot, index) => {
